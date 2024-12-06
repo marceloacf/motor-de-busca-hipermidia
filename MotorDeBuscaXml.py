@@ -23,23 +23,17 @@ class BuscaXML:
         return paginas
 
     def preprocessar(self):
-        # Combinar títulos e textos em uma lista de documentos
         self.documentos = [f"{page['title']} {page['text']}" for page in self.paginas]
-        # Criar a matriz TF-IDF para os documentos
         self.tfidf_matrix = self.vectorizer.fit_transform(self.documentos)
 
     def buscar(self, palavra, limite=10):
-        # Transformar a palavra de busca em um vetor TF-IDF
         query_vec = self.vectorizer.transform([palavra])
-        # Calcular a similaridade cosseno entre a busca e os documentos
         similaridades = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
-        # Combinar similaridade com os dados das páginas
         resultados = sorted(
             zip(similaridades, self.paginas),
             key=lambda x: x[0],
             reverse=True
         )
-        # Filtrar e retornar os resultados com relevância > 0
         resultados_relevantes = [
             {"id": res[1]["id"], "title": res[1]["title"], "score": res[0]}
             for res in resultados if res[0] > 0
@@ -49,19 +43,16 @@ class BuscaXML:
     
 
 def encontrar_arquivo_xml(pasta="."):
-        # Define o diretório de busca
         diretorio = Path(pasta)
-        # Busca por arquivos XML na pasta
         arquivos_xml = list(diretorio.glob("*.xml"))
         
         if not arquivos_xml:
             raise FileNotFoundError("Nenhum arquivo XML encontrado na pasta especificada.")
         
-        # Retorna o primeiro arquivo XML encontrado
         return arquivos_xml[0]
 
 try:
-    caminho = encontrar_arquivo_xml()  # Substitui o caminho fixo
+    caminho = encontrar_arquivo_xml()
     busca = BuscaXML(caminho)
 
     while True:
@@ -70,7 +61,7 @@ try:
             print("Encerrando o programa.")
             break
         
-        resultados = busca.buscar(palavra, limite=5)  # Limite de 5 resultados
+        resultados = busca.buscar(palavra, limite=5)
         if resultados:
             print("\nResultados mais relevantes:")
             for res in resultados:
