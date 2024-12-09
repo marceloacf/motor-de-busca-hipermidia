@@ -1,7 +1,6 @@
 import os
 import xml.etree.ElementTree as ET
 import time
-
 class Item:
     def __init__(self, id, ocorrencias_titulo, ocorrencias_texto, palavras_texto, peso, titulo, texto):
         self.id = id
@@ -25,6 +24,26 @@ def filtrar_palavras(texto):
     Filtra palavras menores que 4 caracteres de um texto.
     """
     return [palavra for palavra in texto.split() if len(palavra) >= 4]
+def contarPalavras(texto,palavraBusca,termos):
+    array=palavraBusca.split(" ")
+    for i in range(len(array)):
+        termos[array[i]]=termos.get(array[i],0)+texto.count(array[i])
+    for i in range(len(array)):
+        if(i+1<len(array)):
+            var=array[i]+" "+array[i+1]
+
+            flag=0
+            for j in range(len(texto)):
+                if(j+1<len(texto)):
+                    if(array[i]==texto[j] and array[i+1]==texto[j+1]):
+                        flag+=1
+            # termos[var]=texto.count(var)
+            termos[var]=termos.get(var,0)+flag
+
+            termos[array[i]]-=flag
+            termos[array[i+1]]-=flag
+    return termos
+
 
 def parse_xml(file_path, search):
     """
@@ -34,7 +53,7 @@ def parse_xml(file_path, search):
     tree = ET.parse(file_path)
     root = tree.getroot()
     search = search.lower()
-
+    termos={}
     # Realizar busca no arquivo XML
     for page in root.findall('page'):
         page_id = page.find('id').text
@@ -48,6 +67,9 @@ def parse_xml(file_path, search):
         # Contar ocorrências no título e no texto
         ocorrencias_titulo = words_in_title.count(search)
         ocorrencias_texto = words_in_text.count(search)
+        teste_ocorrencias_texto = contarPalavras(words_in_text,search,termos)
+        print(teste_ocorrencias_texto)
+        print(termos)
 
         # Verificar se a palavra aparece no título ou texto
         if ocorrencias_titulo > 0 or ocorrencias_texto > 0:
@@ -70,7 +92,6 @@ def parse_xml(file_path, search):
 
     # Ordenar resultados por peso em ordem decrescente
     resultado = sorted(lista_de_resultados, key=lambda item: item.peso, reverse=True)
-
     # Armazenar resultados no cache para uso futuro
     cache[search] = resultado
     return resultado
