@@ -1,6 +1,7 @@
 import os
 import xml.etree.ElementTree as ET
 import time
+import copy
 class Item:
     def __init__(self, id, ocorrencias_titulo, ocorrencias_texto, palavras_texto, peso, titulo, texto):
         self.id = id
@@ -28,6 +29,7 @@ def contarPalavras(texto,palavraBusca,termos):
     array=palavraBusca.split(" ")
     for i in range(len(array)):
         termos[array[i]]=termos.get(array[i],0)+texto.count(array[i])
+    termosPalavra=copy.deepcopy(termos)
     for i in range(len(array)):
         if(i+1<len(array)):
             var=array[i]+" "+array[i+1]
@@ -42,8 +44,10 @@ def contarPalavras(texto,palavraBusca,termos):
 
             termos[array[i]]-=flag
             termos[array[i+1]]-=flag
-    return termos
-
+    termosCombinacoesPalavra=copy.deepcopy(termos)
+    for i in range(len(array)):
+        termosCombinacoesPalavra.pop(array[i])
+    return {"palavras": termosPalavra,"combinacoes":termosCombinacoesPalavra}
 
 def parse_xml(file_path, search):
     """
@@ -53,7 +57,6 @@ def parse_xml(file_path, search):
     tree = ET.parse(file_path)
     root = tree.getroot()
     search = search.lower()
-    termos={}
     # Realizar busca no arquivo XML
     for page in root.findall('page'):
         page_id = page.find('id').text
@@ -65,25 +68,37 @@ def parse_xml(file_path, search):
         words_in_text = filtrar_palavras(page_text.lower())
 
         # Contar ocorrências no título e no texto
-        ocorrencias_titulo = words_in_title.count(search)
-        ocorrencias_texto = words_in_text.count(search)
-        teste_ocorrencias_texto = contarPalavras(words_in_text,search,termos)
-        print(teste_ocorrencias_texto)
-        print(termos)
+        termos={}
+        termosTitulo={}
+        # ocorrencias_titulo = words_in_title.count(search)
+        # ocorrencias_texto = words_in_text.count(search)
+        ocorrencias_titulo = contarPalavras(words_in_title,search,termosTitulo)
+        ocorrencias_texto = contarPalavras(words_in_text,search,termos)
+        print(ocorrencias_texto)
+        print(ocorrencias_titulo)
+        # print(termos)
 
         # Verificar se a palavra aparece no título ou texto
-        if ocorrencias_titulo > 0 or ocorrencias_texto > 0:
+        if len(ocorrencias_titulo["palavras"]) > 0 or len(ocorrencias_texto["palavras"]) > 0:
             # Cálculo de pesos balanceado (densidade de ocorrência)
-            peso_titulo = (ocorrencias_titulo / len(words_in_title)) if len(words_in_title) > 0 else 0.0
-            peso_texto = (ocorrencias_texto / len(words_in_text)) if len(words_in_text) > 0 else 0.0
+            # peso_titulo = (ocorrencias_titulo / len(words_in_title)) if len(words_in_title) > 0 else 0.0
+            # peso_texto = (ocorrencias_texto / len(words_in_text)) if len(words_in_text) > 0 else 0.0
+
+            peso_titulo = (sum(ocorrencias_titulo["palavras"].values())*0.5 + 
+            (sum(ocorrencias_titulo["combinacoes"].values())-ocorrencias_titulo["combinacoes"].get(search,0))*0.7 + 
+            ocorrencias_titulo["combinacoes"].get(search,0))/len(words_in_title) if len(words_in_title)>0 else 0.0
+
+            peso_texto = (sum(ocorrencias_texto["palavras"].values())*0.5 + 
+            (sum(ocorrencias_texto["combinacoes"].values())-ocorrencias_texto["combinacoes"].get(search,0))*0.7 + 
+            ocorrencias_texto["combinacoes"].get(search,0))/len(words_in_text) if len(words_in_text)>0 else 0.0
 
             # Atribuindo pesos para título e texto, com 70% para o título e 30% para o texto
             relevancia = (0.1 * peso_titulo) + (0.3 * peso_texto)
             
             lista_de_resultados.append(Item(
                 id=page_id,
-                ocorrencias_titulo=ocorrencias_titulo,
-                ocorrencias_texto=ocorrencias_texto,
+                ocorrencias_titulo= sum(ocorrencias_titulo["palavras"].values()),
+                ocorrencias_texto=sum(ocorrencias_texto["palavras"].values()),
                 palavras_texto=len(words_in_text),
                 peso=relevancia,
                 titulo=page_title,
