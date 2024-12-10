@@ -74,8 +74,8 @@ def parse_xml(file_path, search):
         # ocorrencias_texto = words_in_text.count(search)
         ocorrencias_titulo = contarPalavras(words_in_title,search,termosTitulo)
         ocorrencias_texto = contarPalavras(words_in_text,search,termos)
-        print(ocorrencias_texto)
-        print(ocorrencias_titulo)
+        # print(ocorrencias_texto)
+        # print(ocorrencias_titulo)
         # print(termos)
 
         # Verificar se a palavra aparece no título ou texto
