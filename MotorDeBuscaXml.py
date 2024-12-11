@@ -159,8 +159,55 @@ def parse_xml(file_path, search):
     cache[search] = resultado
     return resultado
 
-def buscarTermos():
-    pass
+def buscarTermos(file_path,search):
+    lista_de_resultados = []
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    search = search.lower()
+
+
+    for page in root.findall('page'):
+        page_id = page.find('id').text
+        busca=search.split(" ")
+        page_title = page.find('title').text or ""
+        page_text = page.find('text').text or ""
+        words_in_title = filtrar_palavras(page_title.lower())
+        words_in_text = filtrar_palavras(page_text.lower())
+        dicionarioPaginaTexto = dictPreProcessamentoTexto.get(page_id,{})
+        dicionarioPaginaTitulo = dictPreProcessamentoTitulo.get(page_id,{})
+        ocorrencias_texto = 0
+        ocorrencias_titulo = 0
+        for i in busca:
+            ocorrencias_texto += dicionarioPaginaTexto.get(i,0)
+            ocorrencias_titulo += dicionarioPaginaTitulo.get(i,0)
+
+        # Verificar se a palavra aparece no título ou texto
+        if ocorrencias_titulo > 0 or ocorrencias_texto > 0:
+            # Cálculo de pesos balanceado (densidade de ocorrência)
+            # peso_titulo = (ocorrencias_titulo / len(words_in_title)) if len(words_in_title) > 0 else 0.0
+            # peso_texto = (ocorrencias_texto / len(words_in_text)) if len(words_in_text) > 0 else 0.0
+
+            peso_titulo = ocorrencias_titulo/len(words_in_title) if len(words_in_title)>0 else 0.0
+
+            peso_texto = ocorrencias_texto/len(words_in_text) if len(words_in_text)>0 else 0.0
+
+            # Atribuindo pesos para título e texto, com 70% para o título e 30% para o texto
+            relevancia = (0.1 * peso_titulo) + (0.3 * peso_texto)
+            
+            lista_de_resultados.append(Item(
+                id=page_id,
+                ocorrencias_titulo= ocorrencias_titulo,
+                ocorrencias_texto=ocorrencias_texto,
+                palavras_texto=len(words_in_text),
+                peso=relevancia,
+                titulo=page_title,
+                texto=page_text
+            ))
+
+    resultado = sorted(lista_de_resultados, key=lambda item: item.peso, reverse=True)
+    # Armazenar resultados no cache para uso futuro
+    cache[search] = resultado
+    return resultado
 
 def buscar_arquivos_xml():
     """
@@ -199,7 +246,7 @@ def buscar_arquivos_xml():
                 if(len(dictPreProcessamentoTitulo)==0 or len(dictPreProcessamentoTexto)==0):
                     preProcessamentoTexto(dictPreProcessamentoTexto,file_path,search)
                     preProcessamentoTitulo(dictPreProcessamentoTitulo,file_path,search)
-                resultados = buscarTermos()
+                resultados = buscarTermos(file_path, search)
                 end_time = time.time()
                 print(f"Tempo de busca pela primeira vez: {end_time - start_time:.4f} segundos")
 
