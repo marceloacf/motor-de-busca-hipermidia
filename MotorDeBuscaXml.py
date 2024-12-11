@@ -20,11 +20,59 @@ class Pesquisa:
 # Cache para armazenar resultados de pesquisa
 cache = {}
 
+#Pré-processamento
+dictPreProcessamentoTexto = {}
+dictPreProcessamentoTitulo = {}
+
+def preProcessamentoTexto(dict, file_path, search):
+    lista_de_resultados = []
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    search = search.lower()
+    # Realizar busca no arquivo XML
+    for page in root.findall('page'):
+        page_id = page.find('id').text
+        page_title = page.find('title').text or ""
+        page_text = page.find('text').text or ""
+        filtered_text = filtrar_palavras(page_text.lower())
+        for i in filtered_text:
+            if(dict.get(page_id,False)==False):
+                dict[page_id] = { f"{i}": 1 }
+            else:
+                if(dict[page_id].get(i,False)==False):
+                    dict[page_id].update({ f"{i}": 1 })
+                else:
+                    dict[page_id][i] = dict[page_id][i] + 1
+
+def preProcessamentoTitulo(dict, file_path, search):
+    lista_de_resultados = []
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    search = search.lower()
+    # Realizar busca no arquivo XML
+    for page in root.findall('page'):
+        page_id = page.find('id').text
+        page_title = page.find('title').text or ""
+        page_text = page.find('text').text or ""
+        filtered_title = filtrar_palavras(page_title.lower())
+        for i in filtered_title:
+            if(dict.get(page_id,False)==False):
+                dict[page_id] = { f"{i}": 1 }
+            else:
+                if(dict[page_id].get(i,False)==False):
+                    dict[page_id].update({ f"{i}": 1 })
+                else:
+                    dict[page_id][i] = dict[page_id][i]+1
+
+
+
+
 def filtrar_palavras(texto):
     """
     Filtra palavras menores que 4 caracteres de um texto.
     """
     return [palavra for palavra in texto.split() if len(palavra) >= 4]
+
 def contarPalavras(texto,palavraBusca,termos):
     array=palavraBusca.split(" ")
     for i in range(len(array)):
@@ -111,6 +159,9 @@ def parse_xml(file_path, search):
     cache[search] = resultado
     return resultado
 
+def buscarTermos():
+    pass
+
 def buscar_arquivos_xml():
     """
     Busca automaticamente todos os arquivos XML no diretório atual.
@@ -144,7 +195,11 @@ def buscar_arquivos_xml():
             else:
                 # Medir o tempo de busca pela primeira vez
                 start_time = time.time()
-                resultados = parse_xml(file_path, search)
+                # resultados = parse_xml(file_path, search)
+                if(len(dictPreProcessamentoTitulo)==0 or len(dictPreProcessamentoTexto)==0):
+                    preProcessamentoTexto(dictPreProcessamentoTexto,file_path,search)
+                    preProcessamentoTitulo(dictPreProcessamentoTitulo,file_path,search)
+                resultados = buscarTermos()
                 end_time = time.time()
                 print(f"Tempo de busca pela primeira vez: {end_time - start_time:.4f} segundos")
 
