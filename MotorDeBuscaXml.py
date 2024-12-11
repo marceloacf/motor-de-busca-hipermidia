@@ -64,9 +64,6 @@ def preProcessamentoTitulo(dict, file_path, search):
                 else:
                     dict[page_id][i] = dict[page_id][i]+1
 
-
-
-
 def filtrar_palavras(texto):
     """
     Filtra palavras menores que 4 caracteres de um texto.
@@ -184,19 +181,15 @@ def buscarTermos(file_path,search):
         # Verificar se a palavra aparece no título ou texto
         if ocorrencias_titulo > 0 or ocorrencias_texto > 0:
             # Cálculo de pesos balanceado (densidade de ocorrência)
-            # peso_titulo = (ocorrencias_titulo / len(words_in_title)) if len(words_in_title) > 0 else 0.0
-            # peso_texto = (ocorrencias_texto / len(words_in_text)) if len(words_in_text) > 0 else 0.0
-
-            peso_titulo = ocorrencias_titulo/len(words_in_title) if len(words_in_title)>0 else 0.0
-
-            peso_texto = ocorrencias_texto/len(words_in_text) if len(words_in_text)>0 else 0.0
+            peso_titulo = (ocorrencias_titulo / len(words_in_title)) if len(words_in_title) > 0 else 0.0
+            peso_texto = (ocorrencias_texto / len(words_in_text)) if len(words_in_text) > 0 else 0.0
 
             # Atribuindo pesos para título e texto, com 70% para o título e 30% para o texto
             relevancia = (0.1 * peso_titulo) + (0.3 * peso_texto)
             
             lista_de_resultados.append(Item(
                 id=page_id,
-                ocorrencias_titulo= ocorrencias_titulo,
+                ocorrencias_titulo = ocorrencias_titulo,
                 ocorrencias_texto=ocorrencias_texto,
                 palavras_texto=len(words_in_text),
                 peso=relevancia,
@@ -204,7 +197,9 @@ def buscarTermos(file_path,search):
                 texto=page_text
             ))
 
+    # Ordenar resultados por peso em ordem decrescente
     resultado = sorted(lista_de_resultados, key=lambda item: item.peso, reverse=True)
+    
     # Armazenar resultados no cache para uso futuro
     cache[search] = resultado
     return resultado
@@ -246,7 +241,9 @@ def buscar_arquivos_xml():
                 if(len(dictPreProcessamentoTitulo)==0 or len(dictPreProcessamentoTexto)==0):
                     preProcessamentoTexto(dictPreProcessamentoTexto,file_path,search)
                     preProcessamentoTitulo(dictPreProcessamentoTitulo,file_path,search)
+                    
                 resultados = buscarTermos(file_path, search)
+            
                 end_time = time.time()
                 print(f"Tempo de busca pela primeira vez: {end_time - start_time:.4f} segundos")
 
